@@ -5,6 +5,21 @@ const app = express();
 
 app.use(express.json());
 
+// Middleware
+function verifyExistsAccountCPF(request, response, next) {
+  const { cpf } = request.headers;
+
+  const customer = customers.find(customer => customer.cpf === cpf);
+
+  if (!customer) {
+    return response.status(400).json({error: "Customer not found"});
+  }
+
+  request.customer = customer;
+
+  return next();
+}
+
 /**
  * Account fields:
  *  1) id - uuid
@@ -35,17 +50,12 @@ app.post("/account", (request, response) => {
   return response.status(201).send();
 });
 
-app.get("/statement", (request, response) => {
-  const { cpf } = request.headers;
+// app.use(verifyExistsAccountCPF);
 
-  const customer = customers.find(customer => customer.cpf === cpf);
-
-  if (!customer) {
-    return response.status(400).json({error: "Customer not found"});
-  }
+app.get("/statement", verifyExistsAccountCPF, (request, response) => {
+  const { customer } = request;
 
   return response.json(customer.statement);
-
 });
 
 app.listen(3333);
